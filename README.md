@@ -1,18 +1,11 @@
 # WinSux & Ultimate (Unified & Repo-Independent)
 
 <p align="center">
-  <a href="https://github.com/ryslavy/WinSux-Ultimate/stargazers"><img src="https://img.shields.io/github/stars/ryslavy/WinSux-Ultimate?style=for-the-badge&logo=github&color=gold" alt="GitHub Stars"></a>
-  <a href="https://github.com/ryslavy/WinSux-Ultimate/network/members"><img src="https://img.shields.io/github/forks/ryslavy/WinSux-Ultimate?style=for-the-badge&logo=github&color=blue" alt="Forks"></a>
-  <a href="https://github.com/ryslavy/WinSux-Ultimate"><img src="https://img.shields.io/github/repo-size/ryslavy/WinSux-Ultimate?style=for-the-badge&color=8A2BE2" alt="Repo Size"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/ryslavy/WinSux-Ultimate?style=for-the-badge&color=10B981" alt="License: MIT"></a>
-  <a href="https://github.com/ryslavy/WinSux-Ultimate/commits/main"><img src="https://img.shields.io/github/last-commit/ryslavy/WinSux-Ultimate?style=for-the-badge&color=06B6D4" alt="Last Commit"></a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Platform: Windows">
-  <img src="https://img.shields.io/badge/Shell-PowerShell%205.1%2B%20%7C%207%2B-5391FE?style=flat-square&logo=powershell&logoColor=white" alt="Shell: PowerShell">
-  <img src="https://img.shields.io/badge/Package%20Manager-Winget%20Native-2ea44f?style=flat-square" alt="Winget Native">
-  <img src="https://img.shields.io/badge/Releases%203rd%20Party-0%20(Zero)-success?style=flat-square" alt="Zero 3rd party releases">
+  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Platform: Windows 10 | 11">
+  <img src="https://img.shields.io/badge/Language-PowerShell%205.1%2B%20%7C%207%2B-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell">
+  <img src="https://img.shields.io/badge/Package%20Manager-Winget%20Native-2ea44f?style=for-the-badge&logo=windows-terminal&logoColor=white" alt="Winget Native">
+  <img src="https://img.shields.io/badge/Optimization%20Scripts-110%20Total-blueviolet?style=for-the-badge" alt="110 Scripts">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-10B981?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
 [Čeština](#český-popis) | [English](#english-description)
@@ -150,6 +143,8 @@ git add .
 git commit -m "Your update message"
 git push origin main
 ```
+
+Your web installer is immediately ready to use on any PC:
 ```powershell
 irm https://raw.githubusercontent.com/ryslavy/WinSux-Ultimate/main/IWR.ps1 | iex
 ```
@@ -157,11 +152,6 @@ irm https://raw.githubusercontent.com/ryslavy/WinSux-Ultimate/main/IWR.ps1 | iex
 ---
 
 ## Project Statistics / Metriky Projektu
-
-<p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=ryslavy&repo=WinSux-Ultimate&theme=radical&show_icons=true" alt="WinSux-Ultimate Repo Stats" />
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=ryslavy&repo=WinSux-Ultimate&layout=compact&theme=radical" alt="Top Languages" />
-</p>
 
 ### Detailed Category Breakdown
 
