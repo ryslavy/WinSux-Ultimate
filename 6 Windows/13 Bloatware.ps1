@@ -7,9 +7,12 @@
         $Host.PrivateData.ProgressBackgroundColor = "Black"
         $Host.PrivateData.ProgressForegroundColor = "White"
         Clear-Host
-
         # SCRIPT CHECK INTERNET
-        if (!(Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+        $hasNet = [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()
+        if ($hasNet) {
+            try { $hasNet = ([System.Net.Dns]::GetHostAddresses("github.com").Count -gt 0) } catch { $hasNet = $true }
+        }
+        if (!$hasNet -and !(Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
         Write-Host "Internet Connection Required`n" -ForegroundColor Red
         Pause
         exit

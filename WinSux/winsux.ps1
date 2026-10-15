@@ -30,8 +30,13 @@ foreach ($loc in $helperLocations) {
 }
 
 # SCRIPT CHECK INTERNET
-if (!(Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue) -and 
-    !(Test-Connection -ComputerName "1.1.1.1" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+$hasNet = $false
+if (Get-Command Test-InternetConnection -ErrorAction SilentlyContinue) {
+    $hasNet = Test-InternetConnection
+} else {
+    $hasNet = [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()
+}
+if (-not $hasNet) {
     Write-Host "Internet Connection Required`n" -ForegroundColor Red
     Pause
     exit

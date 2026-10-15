@@ -19,6 +19,33 @@ function Ensure-Admin {
 function Test-InternetConnection {
     [CmdletBinding()]
     param([int]$TimeoutSeconds = 5)
+
+    # 1. Fast check if network adapter is up
+    if (-not [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()) {
+        return $false
+    }
+
+    # 2. HTTP/HTTPS connectivity test (bypasses ICMP ping blocks by ISPs/firewalls)
+    $endpoints = @("http://www.msftconnecttest.com/connecttest.txt", "https://github.com", "https://www.google.com")
+    foreach ($url in $endpoints) {
+        try {
+            $req = [System.Net.HttpWebRequest]::Create($url)
+            $req.Timeout = 2500
+            $req.Method = "HEAD"
+            $resp = $req.GetResponse()
+            $resp.Close()
+            return $true
+        } catch {}
+    }
+
+    # 3. DNS resolution check
+    try {
+        if ([System.Net.Dns]::GetHostAddresses("github.com").Count -gt 0) {
+            return $true
+        }
+    } catch {}
+
+    # 4. ICMP ping fallback
     $targets = @("1.1.1.1", "8.8.8.8", "microsoft.com")
     foreach ($target in $targets) {
         if (Test-Connection -ComputerName $target -Count 1 -Quiet -ErrorAction SilentlyContinue) {

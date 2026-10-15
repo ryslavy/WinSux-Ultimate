@@ -21,8 +21,29 @@ Write-Host "           WinSux & Ultimate - Automated Setup            " -Foregro
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 2. Check Internet Connectivity
-if (!(Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+# 2. Check Internet Connectivity (HTTP, DNS and adapter checks, bypasses ISP ICMP blocks)
+$hasInternet = $false
+if ([System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()) {
+    $endpoints = @("http://www.msftconnecttest.com/connecttest.txt", "https://github.com", "https://www.google.com")
+    foreach ($url in $endpoints) {
+        try {
+            $req = [System.Net.HttpWebRequest]::Create($url)
+            $req.Timeout = 2500
+            $req.Method = "HEAD"
+            $resp = $req.GetResponse()
+            $resp.Close()
+            $hasInternet = $true
+            break
+        } catch {}
+    }
+    if (-not $hasInternet) {
+        try {
+            if ([System.Net.Dns]::GetHostAddresses("github.com").Count -gt 0) { $hasInternet = $true }
+        } catch {}
+    }
+}
+
+if (-not $hasInternet -and !(Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
     Write-Host "Error: Internet connection is required to download files." -ForegroundColor Red
     Pause
     exit
