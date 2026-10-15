@@ -13,14 +13,9 @@
   <img src="https://img.shields.io/badge/Shell-PowerShell%205.1%2B%20%7C%207%2B-5391FE?style=flat-square&logo=powershell&logoColor=white" alt="Shell: PowerShell">
   <img src="https://img.shields.io/badge/Package%20Manager-Winget%20Native-2ea44f?style=flat-square" alt="Winget Native">
   <img src="https://img.shields.io/badge/Releases%203rd%20Party-0%20(Zero)-success?style=flat-square" alt="Zero 3rd party releases">
-  <a href="stats.html"><img src="https://img.shields.io/badge/Dashboard-Interactive%20Stats-orange?style=flat-square&logo=html5" alt="Interactive Dashboard"></a>
 </p>
 
-<p align="center">
-  <a href="stats.html"><strong>📊 [Open Interactive Architecture & Stats Dashboard (stats.html)]</strong></a>
-</p>
-
-[Čeština](#český-popis) | [English](#english-description) | [Project Statistics](#project-statistics--metriky-projektu)
+[Čeština](#český-popis) | [English](#english-description)
 
 ---
 
@@ -181,11 +176,8 @@ irm https://raw.githubusercontent.com/ryslavy/WinSux-Ultimate/main/IWR.ps1 | iex
 | **6 Windows** | `6 Windows/` | 36 | 36 | 5,332 | Debloat, telemetry removal, services, privacy, latency optimization |
 | **7 Hardware** | `7 Hardware/` | 8 | 8 | 400 | MarkC mouse movement, hidusbf overclock, Gamepadla Polling |
 | **8 Advanced** | `8 Advanced/` | 19 | 19 | 2,910 | Resizable BAR force, Windows Defender, CPU priorities, kernel tweaks |
-| **Core & Launchers** | `Core/` + Root | 9 | 3 | 6,000+ | `AppHelper.ps1`, `Start.cmd`, `Start.ps1`, `IWR.ps1`, `stats.html` |
-| **TOTAL** | **Entire Project** | **119** | **110** | **26,200+** | **100% Native Package Management & 0 Upstream Releases** |
-
-> [!TIP]
-> You can open the full interactive HTML dashboard directly by opening [`stats.html`](stats.html) in your browser.
+| **Core & Launchers** | `Core/` + Root | 8 | 3 | 6,000+ | `AppHelper.ps1`, `Start.cmd`, `Start.ps1`, `IWR.ps1` |
+| **TOTAL** | **Entire Project** | **118** | **110** | **26,200+** | **100% Native Package Management & 0 Upstream Releases** |
 
 ---
 
