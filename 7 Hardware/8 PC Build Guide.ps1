@@ -1,0 +1,1 @@
+Start-Process "https://pcpartpicker.com/guide/"
