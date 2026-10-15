@@ -213,8 +213,8 @@ if (Get-Command Install-HeliumNative -ErrorAction SilentlyContinue) {
     }
 
     Get-Service | Where-Object { $_.Name -match 'Helium' } | ForEach-Object {
-        cmd /c "sc stop `"$($_.Name)`" >nul 2>&1"
-        cmd /c "sc delete `"$($_.Name)`" >nul 2>&1"
+        Stop-Service -Name $_.Name -Force -ErrorAction SilentlyContinue
+        sc.exe delete "$($_.Name)" | Out-Null
     }
 
     Get-ScheduledTask | Where-Object { $_.TaskName -like '*Helium*' } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue

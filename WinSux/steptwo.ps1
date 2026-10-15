@@ -9,30 +9,51 @@
         Clear-Host
 
         # FUNCTION RUN AS TRUSTED INSTALLER
-        function Run-Trusted([String]$command) {
-        try {
-    	Stop-Service -Name TrustedInstaller -Force -ErrorAction Stop -WarningAction Stop
-  		}
-  		catch {
-    	taskkill /im trustedinstaller.exe /f >$null
-  		}
-        $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='TrustedInstaller'"
-        $DefaultBinPath = $service.PathName
-  		$trustedInstallerPath = "$env:SystemRoot\servicing\TrustedInstaller.exe"
-  		if ($DefaultBinPath -ne $trustedInstallerPath) {
-    	$DefaultBinPath = $trustedInstallerPath
-  		}
-        $bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
-        $base64Command = [Convert]::ToBase64String($bytes)
-        sc.exe config TrustedInstaller binPath= "cmd.exe /c powershell.exe -encodedcommand $base64Command" | Out-Null
-        sc.exe start TrustedInstaller | Out-Null
-        sc.exe config TrustedInstaller binpath= "`"$DefaultBinPath`"" | Out-Null
-        try {
-    	Stop-Service -Name TrustedInstaller -Force -ErrorAction Stop -WarningAction Stop
-  		}
-  		catch {
-    	taskkill /im trustedinstaller.exe /f >$null
-  		}
+        function Run-Trusted {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+                [string[]]$Command
+            )
+            process {
+                $cmdList = @($Command | Where-Object { $_ -and $_.Trim() -ne "" })
+                if ($cmdList.Count -eq 0) { return }
+
+                try {
+                    Stop-Service -Name TrustedInstaller -Force -ErrorAction SilentlyContinue
+                } catch {
+                    taskkill /im trustedinstaller.exe /f >$null 2>&1
+                }
+                $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='TrustedInstaller'" -ErrorAction SilentlyContinue
+                $DefaultBinPath = if ($service -and $service.PathName) { $service.PathName } else { "$env:SystemRoot\servicing\TrustedInstaller.exe" }
+                $trustedInstallerPath = "$env:SystemRoot\servicing\TrustedInstaller.exe"
+                if ($DefaultBinPath -ne $trustedInstallerPath -and -not (Test-Path $DefaultBinPath)) {
+                    $DefaultBinPath = $trustedInstallerPath
+                }
+
+                if ($cmdList.Count -eq 1 -and $cmdList[0].Length -lt 500 -and $cmdList[0] -notmatch "[\r\n]") {
+                    $bytes = [System.Text.Encoding]::Unicode.GetBytes($cmdList[0])
+                    $base64Command = [Convert]::ToBase64String($bytes)
+                    sc.exe config TrustedInstaller binPath= "cmd.exe /c powershell.exe -NoProfile -NonInteractive -EncodedCommand $base64Command" | Out-Null
+                    sc.exe start TrustedInstaller | Out-Null
+                } else {
+                    $tempScript = "$env:SystemRoot\Temp\trusted_batch_$([Guid]::NewGuid().ToString('N')).ps1"
+                    $scriptContent = $cmdList -join "`r`n"
+                    [System.IO.File]::WriteAllText($tempScript, $scriptContent, [System.Text.Encoding]::UTF8)
+                    sc.exe config TrustedInstaller binPath= "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$tempScript`"" | Out-Null
+                    sc.exe start TrustedInstaller | Out-Null
+                    if (Test-Path $tempScript) {
+                        Remove-Item -Path $tempScript -Force -ErrorAction SilentlyContinue
+                    }
+                }
+
+                sc.exe config TrustedInstaller binpath= "`"$DefaultBinPath`"" | Out-Null
+                try {
+                    Stop-Service -Name TrustedInstaller -Force -ErrorAction SilentlyContinue
+                } catch {
+                    taskkill /im trustedinstaller.exe /f >$null 2>&1
+                }
+            }
         }
 		
         # SCRIPT SILENT
@@ -100,17 +121,30 @@ cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\
 }
 
 # remove edge shortcut
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:SystemDrive\Users\Public\Desktop\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:SystemRoot\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:Public\Desktop\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
 
-# remove edge folders
-Remove-Item -Recurse -Force "$env:SystemDrive\Program Files (x86)\Microsoft" -ErrorAction SilentlyContinue | Out-Null
+# remove edge folders (target Edge specifically instead of wiping entire Microsoft directory)
+$edgeDirs = @(
+    "$env:SystemDrive\Program Files (x86)\Microsoft\Edge",
+    "$env:SystemDrive\Program Files (x86)\Microsoft\EdgeUpdate",
+    "$env:SystemDrive\Program Files (x86)\Microsoft\EdgeCore",
+    "$env:SystemDrive\Program Files\Microsoft\Edge",
+    "$env:SystemDrive\Program Files\Microsoft\EdgeUpdate",
+    "$env:SystemDrive\Program Files\Microsoft\EdgeCore",
+    "$env:ProgramData\Microsoft\EdgeUpdate"
+)
+foreach ($dir in $edgeDirs) {
+    if (Test-Path $dir) {
+        Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue | Out-Null
+    }
+}
 
-# remove edge services
+# remove edge services safely
 $services = Get-Service | Where-Object { $_.Name -match 'Edge' }
 foreach ($service in $services) {
-cmd /c "sc stop `"$($service.Name)`" >nul 2>&1"
-cmd /c "sc delete `"$($service.Name)`" >nul 2>&1"
+    Stop-Service -Name $service.Name -Force -ErrorAction SilentlyContinue
+    sc.exe delete "$($service.Name)" | Out-Null
 }
 
 # windows 10 remove microsoft edge legacy package
@@ -237,12 +271,12 @@ Start-Process "msiexec.exe" -ArgumentList "/x $guid /qn /norestart" -Wait -NoNew
 Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null
 
 # uninstall onedrive
-cmd /c "C:\Windows\System32\OneDriveSetup.exe -uninstall >nul 2>&1"
+cmd /c "`"$env:SystemRoot\System32\OneDriveSetup.exe`" -uninstall >nul 2>&1"
 # uninstall office 365 onedrive
-Get-ChildItem -Path "C:\Program Files*\Microsoft OneDrive", "$env:LOCALAPPDATA\Microsoft\OneDrive" -Filter "OneDriveSetup.exe" -Recurse -ErrorAction SilentlyContinue |
+Get-ChildItem -Path "$env:ProgramFiles*\Microsoft OneDrive", "$env:LOCALAPPDATA\Microsoft\OneDrive" -Filter "OneDriveSetup.exe" -Recurse -ErrorAction SilentlyContinue |
 ForEach-Object { Start-Process -Wait $_.FullName -ArgumentList "/uninstall /allusers" -WindowStyle Hidden -ErrorAction SilentlyContinue }
 # windows 10 uninstall onedrive
-cmd /c "C:\Windows\SysWOW64\OneDriveSetup.exe -uninstall >nul 2>&1"
+cmd /c "`"$env:SystemRoot\SysWOW64\OneDriveSetup.exe`" -uninstall >nul 2>&1"
 # windows 10 remove onedrive scheduled tasks
 Get-ScheduledTask | Where-Object {$_.Taskname -match 'OneDrive'} | Unregister-ScheduledTask -Confirm:$false
 
@@ -273,7 +307,7 @@ Start-Sleep -Seconds 1
 
 # windows 10 uninstall old snipping tool
 try {
-Start-Process "C:\Windows\System32\SnippingTool.exe" -ArgumentList "/Uninstall" -ErrorAction SilentlyContinue
+Start-Process "$env:SystemRoot\System32\SnippingTool.exe" -ArgumentList "/Uninstall" -ErrorAction SilentlyContinue
 } catch { }
 # silent window for uninstall old snipping tool
 $processExists = Get-Process -Name SnippingTool -ErrorAction SilentlyContinue
@@ -343,8 +377,10 @@ New-Item -Path "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp" 
 ## regedit HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree
 ## C:\Windows\System32\Tasks
 $treePath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree"
-Get-ChildItem $treePath | Where-Object { $_.PSChildName -ne "Microsoft" } | ForEach-Object {
-Run-Trusted "Remove-Item '$($_.PSPath)' -Recurse -Force"
+$nonMsTasks = Get-ChildItem $treePath -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -ne "Microsoft" }
+if ($nonMsTasks) {
+    $delCmds = @($nonMsTasks | ForEach-Object { "Remove-Item '$($_.PSPath)' -Recurse -Force -ErrorAction SilentlyContinue" })
+    Run-Trusted $delCmds
 }
 
 $tasksPath = "$env:SystemRoot\System32\Tasks"
@@ -769,7 +805,7 @@ Add-Type -AssemblyName System.Windows.Forms
 $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
 $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
 Add-Type -AssemblyName System.Drawing
-$file = "C:\Windows\Black.jpg"
+$file = "$env:SystemRoot\Black.jpg"
 $edit = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight
 $color = [System.Drawing.Brushes]::Black
 $graphics = [System.Drawing.Graphics]::FromImage($edit)
@@ -779,11 +815,11 @@ $edit.Save($file)
 $edit.Dispose()
 
 # set image
-cmd /c "reg add `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP`" /v `"LockScreenImagePath`" /t REG_SZ /d `"C:\Windows\Black.jpg`" /f >nul 2>&1"
+cmd /c "reg add `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP`" /v `"LockScreenImagePath`" /t REG_SZ /d `"$env:SystemRoot\Black.jpg`" /f >nul 2>&1"
 cmd /c "reg add `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP`" /v `"LockScreenImageStatus`" /t REG_DWORD /d `"1`" /f >nul 2>&1"
 
 # black wallpaper
-cmd /c "reg add `"HKCU\Control Panel\Desktop`" /v `"Wallpaper`" /t REG_SZ /d `"C:\Windows\Black.jpg`" /f >nul 2>&1"
+cmd /c "reg add `"HKCU\Control Panel\Desktop`" /v `"Wallpaper`" /t REG_SZ /d `"$env:SystemRoot\Black.jpg`" /f >nul 2>&1"
 rundll32.exe user32.dll, UpdatePerUserSystemParameters
 
 # remove context menu items
@@ -839,10 +875,10 @@ $MultilineComment = @'
     </DefaultLayoutOverride>
 </LayoutModificationTemplate>
 '@
-Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII
+Set-Content -Path "$env:SystemRoot\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII
 
 # assign startmenulayout.xml registry
-$layoutFile="C:\Windows\StartMenuLayout.xml"
+$layoutFile = "$env:SystemRoot\StartMenuLayout.xml"
 $regAliases = @("HKLM", "HKCU")
 foreach ($regAlias in $regAliases){
 $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
@@ -866,7 +902,7 @@ Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0
 }
 
 # delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:SystemRoot\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
 
 # windows 11 import start menu
 # remove start2 bin
@@ -1166,27 +1202,29 @@ powercfg /setacvalueindex scheme_current sub_none consolelock 0 2>$null
         ## services.msc
 
 # compile and create service
-$csFile = "C:\Windows\Temp\settimerresolutionservice.cs"
+$csFile = "$env:SystemRoot\Temp\settimerresolutionservice.cs"
 if (-not (Test-Path $csFile)) {
     $altCs = @("$PSScriptRoot\settimerresolutionservice.cs", "$PSScriptRoot\..\WinSux\settimerresolutionservice.cs", "$env:USERPROFILE\Desktop\WinSux\settimerresolutionservice.cs") | Where-Object { Test-Path $_ } | Select-Object -First 1
     if ($altCs) { Copy-Item $altCs $csFile -Force -ErrorAction SilentlyContinue }
 }
-$csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+$csc = "$env:SystemRoot\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if (-not (Test-Path $csc)) {
-    $csc = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe"
+    $csc = "$env:SystemRoot\Microsoft.NET\Framework\v4.0.30319\csc.exe"
 }
+$timerExe = "$env:SystemRoot\SetTimerResolutionService.exe"
 if ((Test-Path $csc) -and (Test-Path $csFile)) {
-    Start-Process -Wait $csc -ArgumentList "-out:C:\Windows\SetTimerResolutionService.exe `"$csFile`"" -WindowStyle Hidden
+    Start-Process -Wait $csc -ArgumentList "-out:`"$timerExe`" `"$csFile`"" -WindowStyle Hidden
 }
 
 # remove old service if exists
 if (Get-Service -Name "Set Timer Resolution Service" -ErrorAction SilentlyContinue) {
+    Stop-Service -Name "Set Timer Resolution Service" -Force -ErrorAction SilentlyContinue
     sc.exe delete "Set Timer Resolution Service" | Out-Null
     Start-Sleep -Seconds 2
 }
 
 # install and start service
-New-Service -Name "Set Timer Resolution Service" -BinaryPathName "$env:SystemDrive\Windows\SetTimerResolutionService.exe" -ErrorAction SilentlyContinue | Out-Null
+New-Service -Name "Set Timer Resolution Service" -BinaryPathName "$timerExe" -ErrorAction SilentlyContinue | Out-Null
 Set-Service -Name "Set Timer Resolution Service" -StartupType Auto -ErrorAction SilentlyContinue | Out-Null
 Set-Service -Name "Set Timer Resolution Service" -Status Running -ErrorAction SilentlyContinue | Out-Null
 
@@ -1213,7 +1251,7 @@ Get-AppxPackage -allusers *Microsoft.OutlookForWindows* | Remove-AppxPackage -Er
 Remove-Item -Path "$env:USERPROFILE\AppData\Local\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 
 # clear temp folder
-Remove-Item -Path "$env:SystemDrive\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 
 # delete folders & files
 Remove-Item "$env:SystemDrive\DumpStack.log" -Force -ErrorAction SilentlyContinue | Out-Null
@@ -1225,10 +1263,10 @@ Remove-Item "$env:SystemDrive\inetpub" -Recurse -Force -ErrorAction SilentlyCont
 
 # clear windows updates cache folder
 cmd /c "sc stop `"wuauserv`" >nul 2>&1"
-Remove-Item "$env:SystemDrive\Windows\SoftwareDistribution\*" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+Remove-Item "$env:SystemRoot\SoftwareDistribution\*" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 
 # run disk cleanup
-cleanmgr.exe /autoclean /d C:
+cleanmgr.exe /autoclean /d "$($env:SystemDrive.TrimEnd(':'))"
 
         Write-Host "RESTORE POINT`n"
         ## c:\windows\system32\control.exe sysdm.cpl ,4
@@ -1239,7 +1277,7 @@ try {
 cmd /c "reg add `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore`" /v `"SystemRestorePointCreationFrequency`" /t REG_DWORD /d `"0`" /f >nul 2>&1"
 
 # enable restore point
-Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue | Out-Null
+Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction SilentlyContinue | Out-Null
 
 # create restore point
 Checkpoint-Computer -Description "backup" -RestorePointType "MODIFY_SETTINGS" -ErrorAction SilentlyContinue | Out-Null

@@ -141,10 +141,10 @@ $MultilineComment = @'
     </DefaultLayoutOverride>
 </LayoutModificationTemplate>
 '@
-Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII
+Set-Content -Path "$env:SystemRoot\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII
 
 # assign startmenulayout.xml registry
-$layoutFile="C:\Windows\StartMenuLayout.xml"
+$layoutFile = "$env:SystemRoot\StartMenuLayout.xml"
 $regAliases = @("HKLM", "HKCU")
 foreach ($regAlias in $regAliases){
 $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
@@ -168,7 +168,7 @@ Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0
 }
 
 # delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:SystemRoot\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
 
 # windows 11 import start menu
 # remove start2bin
@@ -430,10 +430,10 @@ $MultilineComment = @'
   </DefaultLayoutOverride>
 </LayoutModificationTemplate>
 '@
-Set-Content -Path "C:\Windows\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII
+Set-Content -Path "$env:SystemRoot\StartMenuLayout.xml" -Value $MultilineComment -Force -Encoding ASCII
 
 # assign startmenulayout.xml registry
-$layoutFile="C:\Windows\StartMenuLayout.xml"
+$layoutFile = "$env:SystemRoot\StartMenuLayout.xml"
 $regAliases = @("HKLM", "HKCU")
 foreach ($regAlias in $regAliases){
 $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
@@ -457,7 +457,7 @@ Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0
 }
 
 # delete startmenulayout.xml
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:SystemRoot\StartMenuLayout.xml" -ErrorAction SilentlyContinue | Out-Null
 
 # windows 11 import start menu
 # remove start2bin

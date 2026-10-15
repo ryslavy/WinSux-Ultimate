@@ -63,7 +63,7 @@ Clear-Host
 Clear-Host
 
 # unblock drs files
-$path = "C:\ProgramData\NVIDIA Corporation\Drs"
+$path = "$env:ProgramData\NVIDIA Corporation\Drs"
 Get-ChildItem -Path $path -Recurse | Unblock-File
 
 # set physx to gpu
@@ -324,7 +324,7 @@ exit
 Clear-Host
 
 # unblock drs files
-$path = "C:\ProgramData\NVIDIA Corporation\Drs"
+$path = "$env:ProgramData\NVIDIA Corporation\Drs"
 Get-ChildItem -Path $path -Recurse | Unblock-File
 
 # revert set physx to gpu

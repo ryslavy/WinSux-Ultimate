@@ -68,7 +68,7 @@ if (-not (Test-Path $inspectorExe)) {
 Clear-Host
 
 # unblock drs files
-$path = "C:\ProgramData\NVIDIA Corporation\Drs"
+$path = "$env:ProgramData\NVIDIA Corporation\Drs"
 Get-ChildItem -Path $path -Recurse | Unblock-File
 
 # set config for inspector
@@ -285,7 +285,7 @@ exit
 Clear-Host
 
 # unblock drs files
-$path = "C:\ProgramData\NVIDIA Corporation\Drs"
+$path = "$env:ProgramData\NVIDIA Corporation\Drs"
 Get-ChildItem -Path $path -Recurse | Unblock-File
 
 # set config for inspector
@@ -322,7 +322,7 @@ exit
 Clear-Host
 
 # unblock drs files
-$path = "C:\ProgramData\NVIDIA Corporation\Drs"
+$path = "$env:ProgramData\NVIDIA Corporation\Drs"
 Get-ChildItem -Path $path -Recurse | Unblock-File
 
 # set config for inspector
@@ -359,7 +359,7 @@ exit
 Clear-Host
 
 # restart to bios
-cmd /c C:\Windows\System32\shutdown.exe /r /fw /t 0
+cmd /c "`"$env:SystemRoot\System32\shutdown.exe`" /r /fw /t 0"
 
 exit
 

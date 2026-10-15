@@ -136,7 +136,7 @@ reg add "$key" /v "RMHdcpKeyglobZero" /t REG_DWORD /d "1" /f | Out-Null
 }
 
 # unblock drs files
-$path = "C:\ProgramData\NVIDIA Corporation\Drs"
+$path = "$env:ProgramData\NVIDIA Corporation\Drs"
 Get-ChildItem -Path $path -Recurse | Unblock-File
 
 # set physx to gpu

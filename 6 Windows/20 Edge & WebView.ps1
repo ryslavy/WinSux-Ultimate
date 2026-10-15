@@ -91,17 +91,30 @@ cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\
 }
 
 # remove edge shortcut
-Remove-Item -Recurse -Force "$env:SystemDrive\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
-Remove-Item -Recurse -Force "$env:SystemDrive\Users\Public\Desktop\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:SystemRoot\System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item -Recurse -Force "$env:Public\Desktop\Microsoft Edge.lnk" -ErrorAction SilentlyContinue | Out-Null
 
 # remove edge folders
-Remove-Item -Recurse -Force "$env:SystemDrive\Program Files (x86)\Microsoft" -ErrorAction SilentlyContinue | Out-Null
+$edgeDirs = @(
+    "$env:SystemDrive\Program Files (x86)\Microsoft\Edge",
+    "$env:SystemDrive\Program Files (x86)\Microsoft\EdgeUpdate",
+    "$env:SystemDrive\Program Files (x86)\Microsoft\EdgeCore",
+    "$env:SystemDrive\Program Files\Microsoft\Edge",
+    "$env:SystemDrive\Program Files\Microsoft\EdgeUpdate",
+    "$env:SystemDrive\Program Files\Microsoft\EdgeCore",
+    "$env:ProgramData\Microsoft\EdgeUpdate"
+)
+foreach ($dir in $edgeDirs) {
+    if (Test-Path $dir) {
+        Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue | Out-Null
+    }
+}
 
 # remove edge services
 $services = Get-Service | Where-Object { $_.Name -match 'Edge' }
 foreach ($service in $services) {
-cmd /c "sc stop `"$($service.Name)`" >nul 2>&1"
-cmd /c "sc delete `"$($service.Name)`" >nul 2>&1"
+    Stop-Service -Name $service.Name -Force -ErrorAction SilentlyContinue
+    sc.exe delete "$($service.Name)" | Out-Null
 }
 
 # windows 10 remove microsoft edge legacy package

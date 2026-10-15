@@ -216,22 +216,29 @@ namespace WindowsService
     }
 }
 '@
-Set-Content -Path "$env:SystemDrive\Windows\SetTimerResolutionService.cs" -Value $csfile -Force
+$csPath = "$env:SystemRoot\Temp\SetTimerResolutionService.cs"
+$timerExe = "$env:SystemRoot\SetTimerResolutionService.exe"
+Set-Content -Path $csPath -Value $csfile -Force
 
 # compile and create service
-Start-Process -Wait "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe" -ArgumentList "-out:C:\Windows\SetTimerResolutionService.exe C:\Windows\SetTimerResolutionService.cs" -WindowStyle Hidden
+$csc = "$env:SystemRoot\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+if (-not (Test-Path $csc)) {
+    $csc = "$env:SystemRoot\Microsoft.NET\Framework\v4.0.30319\csc.exe"
+}
+Start-Process -Wait $csc -ArgumentList "-out:`"$timerExe`" `"$csPath`"" -WindowStyle Hidden
 
 # remove cs file
-Remove-Item "$env:SystemDrive\Windows\SetTimerResolutionService.cs" -ErrorAction SilentlyContinue | Out-Null
+Remove-Item $csPath -ErrorAction SilentlyContinue | Out-Null
 
 # remove old service if exists
 if (Get-Service -Name "Set Timer Resolution Service" -ErrorAction SilentlyContinue) {
-sc.exe delete "Set Timer Resolution Service" | Out-Null
-Start-Sleep -Seconds 2
+    Stop-Service -Name "Set Timer Resolution Service" -Force -ErrorAction SilentlyContinue
+    sc.exe delete "Set Timer Resolution Service" | Out-Null
+    Start-Sleep -Seconds 2
 }
 
 # install and start service
-New-Service -Name "Set Timer Resolution Service" -BinaryPathName "$env:SystemDrive\Windows\SetTimerResolutionService.exe" -ErrorAction SilentlyContinue | Out-Null
+New-Service -Name "Set Timer Resolution Service" -BinaryPathName "$timerExe" -ErrorAction SilentlyContinue | Out-Null
 Set-Service -Name "Set Timer Resolution Service" -StartupType Auto -ErrorAction SilentlyContinue | Out-Null
 Set-Service -Name "Set Timer Resolution Service" -Status Running -ErrorAction SilentlyContinue | Out-Null
 
@@ -250,11 +257,11 @@ Clear-Host
 
 # stop disable delete service
 Set-Service -Name "Set Timer Resolution Service" -StartupType Disabled -ErrorAction SilentlyContinue | Out-Null
-Set-Service -Name "Set Timer Resolution Service" -Status Stopped -ErrorAction SilentlyContinue | Out-Null
+Stop-Service -Name "Set Timer Resolution Service" -Force -ErrorAction SilentlyContinue
 sc.exe delete "Set Timer Resolution Service" | Out-Null
 
 # delete file
-Remove-Item "$env:SystemDrive\Windows\SetTimerResolutionService.exe" -Force -ErrorAction SilentlyContinue | Out-Null
+Remove-Item "$timerExe" -Force -ErrorAction SilentlyContinue | Out-Null
 
 # disable global timer resolution requests
 cmd /c "reg delete `"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel`" /v `"GlobalTimerResolutionRequests`" /f >nul 2>&1"

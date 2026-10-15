@@ -55,17 +55,17 @@ Clear-Host
 
 # set game exe priority
 $processid = Get-Process -Id $exeid -ErrorAction SilentlyContinue
-$processid.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::$prio
-
-Write-Host "GETTING VALUE..."
-
-Start-Sleep -Seconds 3
-
-Clear-Host
-
-# show new value
-$currentprio = $processid.PriorityClass
-Write-Host "ID - $exeid = $currentprio`n"
+if ($processid) {
+    try {
+        $processid.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::$prio
+        $currentprio = $processid.PriorityClass
+        Write-Host "Process '$($processid.ProcessName)' (ID $exeid) priority set to: $currentprio`n" -ForegroundColor Green
+    } catch {
+        Write-Host "Could not set priority: $($_.Exception.Message)`n" -ForegroundColor Red
+    }
+} else {
+    Write-Host "Process ID $exeid not found.`n" -ForegroundColor Red
+}
 
 Pause
 
@@ -117,26 +117,27 @@ $Dialog = New-Object System.Windows.Forms.OpenFileDialog
 $Dialog.Filter = "All Files (*.*)|*.*"
 $Dialog.ShowDialog() | Out-Null
 $gamelauncher = $Dialog.FileName
+if ([string]::IsNullOrWhiteSpace($gamelauncher)) {
+    Write-Host "No file selected." -ForegroundColor Yellow
+    exit
+}
 
 Clear-Host
 
-# set game exe priority
+# set game exe priority and launch
 cmd /c "start `"`" /$prio `"$gamelauncher`""
 
 # convert directory to file name without exe
-$gamelauncher = [System.IO.Path]::GetFileNameWithoutExtension($gamelauncher)
+$processName = [System.IO.Path]::GetFileNameWithoutExtension($gamelauncher)
 
-# check value
-$reloadgamelauncher = (Get-Process -Name "$gamelauncher").PriorityClass
-
-Write-Host "GETTING VALUE..."
-
-Start-Sleep -Seconds 3
-
-Clear-Host
-
-# show new value
-Write-Host "EXE - $gamelauncher = $reloadgamelauncher`n"
+# give process a moment to launch then check
+Start-Sleep -Seconds 1
+$runningProc = Get-Process -Name $processName -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($runningProc) {
+    Write-Host "EXE - $processName priority is: $($runningProc.PriorityClass)`n" -ForegroundColor Green
+} else {
+    Write-Host "Launched $processName with priority: $prio`n" -ForegroundColor Green
+}
 
 Pause
 

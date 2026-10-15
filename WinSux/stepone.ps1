@@ -9,30 +9,51 @@
         Clear-Host
 
         # FUNCTION RUN AS TRUSTED INSTALLER
-        function Run-Trusted([String]$command) {
-        try {
-    	Stop-Service -Name TrustedInstaller -Force -ErrorAction Stop -WarningAction Stop
-  		}
-  		catch {
-    	taskkill /im trustedinstaller.exe /f >$null
-  		}
-        $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='TrustedInstaller'"
-        $DefaultBinPath = $service.PathName
-  		$trustedInstallerPath = "$env:SystemRoot\servicing\TrustedInstaller.exe"
-  		if ($DefaultBinPath -ne $trustedInstallerPath) {
-    	$DefaultBinPath = $trustedInstallerPath
-  		}
-        $bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
-        $base64Command = [Convert]::ToBase64String($bytes)
-        sc.exe config TrustedInstaller binPath= "cmd.exe /c powershell.exe -encodedcommand $base64Command" | Out-Null
-        sc.exe start TrustedInstaller | Out-Null
-        sc.exe config TrustedInstaller binpath= "`"$DefaultBinPath`"" | Out-Null
-        try {
-    	Stop-Service -Name TrustedInstaller -Force -ErrorAction Stop -WarningAction Stop
-  		}
-  		catch {
-    	taskkill /im trustedinstaller.exe /f >$null
-  		}
+        function Run-Trusted {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+                [string[]]$Command
+            )
+            process {
+                $cmdList = @($Command | Where-Object { $_ -and $_.Trim() -ne "" })
+                if ($cmdList.Count -eq 0) { return }
+
+                try {
+                    Stop-Service -Name TrustedInstaller -Force -ErrorAction SilentlyContinue
+                } catch {
+                    taskkill /im trustedinstaller.exe /f >$null 2>&1
+                }
+                $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='TrustedInstaller'" -ErrorAction SilentlyContinue
+                $DefaultBinPath = if ($service -and $service.PathName) { $service.PathName } else { "$env:SystemRoot\servicing\TrustedInstaller.exe" }
+                $trustedInstallerPath = "$env:SystemRoot\servicing\TrustedInstaller.exe"
+                if ($DefaultBinPath -ne $trustedInstallerPath -and -not (Test-Path $DefaultBinPath)) {
+                    $DefaultBinPath = $trustedInstallerPath
+                }
+
+                if ($cmdList.Count -eq 1 -and $cmdList[0].Length -lt 500 -and $cmdList[0] -notmatch "[\r\n]") {
+                    $bytes = [System.Text.Encoding]::Unicode.GetBytes($cmdList[0])
+                    $base64Command = [Convert]::ToBase64String($bytes)
+                    sc.exe config TrustedInstaller binPath= "cmd.exe /c powershell.exe -NoProfile -NonInteractive -EncodedCommand $base64Command" | Out-Null
+                    sc.exe start TrustedInstaller | Out-Null
+                } else {
+                    $tempScript = "$env:SystemRoot\Temp\trusted_batch_$([Guid]::NewGuid().ToString('N')).ps1"
+                    $scriptContent = $cmdList -join "`r`n"
+                    [System.IO.File]::WriteAllText($tempScript, $scriptContent, [System.Text.Encoding]::UTF8)
+                    sc.exe config TrustedInstaller binPath= "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$tempScript`"" | Out-Null
+                    sc.exe start TrustedInstaller | Out-Null
+                    if (Test-Path $tempScript) {
+                        Remove-Item -Path $tempScript -Force -ErrorAction SilentlyContinue
+                    }
+                }
+
+                sc.exe config TrustedInstaller binpath= "`"$DefaultBinPath`"" | Out-Null
+                try {
+                    Stop-Service -Name TrustedInstaller -Force -ErrorAction SilentlyContinue
+                } catch {
+                    taskkill /im trustedinstaller.exe /f >$null 2>&1
+                }
+            }
         }
 
         Write-Host "DEFENDER SETTINGS`n"
@@ -131,15 +152,11 @@ $windowssecuritysettings = @(
 'cmd /c "reg add `"HKEY_LOCAL_MACHINE\System\ControlSet001\Control\CI\Config`" /v `"VulnerableDriverBlocklistEnable`" /t REG_DWORD /d `"0`" /f >nul 2>&1"'
 )
 
-# run $windowssecuritysettings as function with trusted installer
-foreach ($command in $windowssecuritysettings) {
-    Run-Trusted $command
-}
+# run $windowssecuritysettings as trusted installer in a single batch
+Run-Trusted $windowssecuritysettings
 
-# run $windowssecuritysettings as admin
-foreach ($command in $windowssecuritysettings) {
-    Invoke-Expression $command
-}
+# run as admin fallback
+$windowssecuritysettings | ForEach-Object { Invoke-Expression $_ }
 
 # disable uac
 cmd /c "reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System`" /v `"EnableLUA`" /t REG_DWORD /d `"0`" /f >nul 2>&1"

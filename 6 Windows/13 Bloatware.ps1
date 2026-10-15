@@ -164,12 +164,12 @@ Start-Process "msiexec.exe" -ArgumentList "/x $guid /qn /norestart" -Wait -NoNew
 Stop-Process -Force -Name OneDrive -ErrorAction SilentlyContinue | Out-Null
 
 # uninstall onedrive
-cmd /c "C:\Windows\System32\OneDriveSetup.exe -uninstall >nul 2>&1"
+cmd /c "`"$env:SystemRoot\System32\OneDriveSetup.exe`" -uninstall >nul 2>&1"
 # uninstall office 365 onedrive
-Get-ChildItem -Path "C:\Program Files*\Microsoft OneDrive", "$env:LOCALAPPDATA\Microsoft\OneDrive" -Filter "OneDriveSetup.exe" -Recurse -ErrorAction SilentlyContinue |
+Get-ChildItem -Path "$env:ProgramFiles*\Microsoft OneDrive", "$env:LOCALAPPDATA\Microsoft\OneDrive" -Filter "OneDriveSetup.exe" -Recurse -ErrorAction SilentlyContinue |
 ForEach-Object { Start-Process -Wait $_.FullName -ArgumentList "/uninstall /allusers" -WindowStyle Hidden -ErrorAction SilentlyContinue }
 # windows 10 uninstall onedrive
-cmd /c "C:\Windows\SysWOW64\OneDriveSetup.exe -uninstall >nul 2>&1"
+cmd /c "`"$env:SystemRoot\SysWOW64\OneDriveSetup.exe`" -uninstall >nul 2>&1"
 # windows 10 remove onedrive scheduled tasks
 Get-ScheduledTask | Where-Object {$_.Taskname -match 'OneDrive'} | Unregister-ScheduledTask -Confirm:$false
 
@@ -200,7 +200,7 @@ Start-Sleep -Seconds 1
 
 # windows 10 uninstall old snipping tool
 try {
-Start-Process "C:\Windows\System32\SnippingTool.exe" -ArgumentList "/Uninstall" -ErrorAction SilentlyContinue
+Start-Process "$env:SystemRoot\System32\SnippingTool.exe" -ArgumentList "/Uninstall" -ErrorAction SilentlyContinue
 } catch { }
 # silent window for uninstall old snipping tool
 $processExists = Get-Process -Name SnippingTool -ErrorAction SilentlyContinue
@@ -387,7 +387,7 @@ Clear-Host
 Write-Host "Install: Legacy Features..."
 
 # open legacy optional features
-Start-Process "C:\Windows\System32\OptionalFeatures.exe"
+Start-Process "$env:SystemRoot\System32\OptionalFeatures.exe"
 
 # legacy list
 Write-Host ""
@@ -445,10 +445,10 @@ Clear-Host
 Write-Host "Installing: One Drive. Please wait..."
 
 # install onedrive w10
-cmd /c "C:\Windows\SysWOW64\OneDriveSetup.exe >nul 2>&1"
+cmd /c "`"$env:SystemRoot\SysWOW64\OneDriveSetup.exe`" >nul 2>&1"
 
 # install onedrive w11
-cmd /c "C:\Windows\System32\OneDriveSetup.exe >nul 2>&1"
+cmd /c "`"$env:SystemRoot\System32\OneDriveSetup.exe`" >nul 2>&1"
 
 show-menu
 

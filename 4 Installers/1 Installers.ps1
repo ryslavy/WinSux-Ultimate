@@ -117,7 +117,7 @@ Write-Host "Close launcher when installer is finished"
 Download-FileWithRetry -Url "https://www.blizzard.com/download/confirmation?product=bnetdesk" -OutFile "$env:SystemRoot\Temp\battlenet.exe"
 
 # install battle.net 
-Start-Process -Wait "$env:SystemRoot\Temp\battlenet.exe" -ArgumentList '--lang=enUS --installpath="C:\Program Files (x86)\Battle.net"'
+Start-Process -Wait "$env:SystemRoot\Temp\battlenet.exe" -ArgumentList "--lang=enUS --installpath=`"$env:SystemDrive\Program Files (x86)\Battle.net`""
 
 # remove logon battle.net
 cmd /c "reg delete `"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run`" /v `"Battle.net`" /f >nul 2>&1"
@@ -373,13 +373,16 @@ Download-FileWithRetry -Url "https://download.mozilla.org/?product=firefox-lates
 Start-Process -Wait "$env:SystemRoot\Temp\firefox.exe" -ArgumentList "/S"
 
 # uninstall mozilla maintenance service
-Start-Process -FilePath "C:\Program Files (x86)\Mozilla Maintenance Service\uninstall.exe" -ArgumentList "/S" -WindowStyle Hidden -Wait
+$mozMaint = "$env:SystemDrive\Program Files (x86)\Mozilla Maintenance Service\uninstall.exe"
+if (Test-Path $mozMaint) {
+    Start-Process -FilePath $mozMaint -ArgumentList "/S" -WindowStyle Hidden -Wait
+}
 
 # remove firefox scheduled tasks
 Get-ScheduledTask | Where-Object {$_.Taskname -match 'Firefox'} | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue
 
 # install ublock origin
-$uBlockDir = "C:\Program Files\Mozilla Firefox\distribution\extensions"
+$uBlockDir = "$env:SystemDrive\Program Files\Mozilla Firefox\distribution\extensions"
 If (!(Test-Path $ublockDir)) { New-Item -ItemType Directory -Path $ublockDir -Force | Out-Null }
 IWR "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi" -OutFile "$uBlockDir\uBlock0@raymondhill.net.xpi"
 
