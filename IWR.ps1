@@ -27,27 +27,28 @@ Write-Host "==========================================================" -Foregro
 Write-Host ""
 
 # 3. Detect Source Repository and Branch Dynamically
-$detectedUser = ""
-$detectedRepo = ""
+# 3. Detect Source Repository and Branch Dynamically (Defaults to ryslavy/WinSux-Ultimate)
+$detectedUser = "ryslavy"
+$detectedRepo = "WinSux-Ultimate"
 $detectedBranch = "main"
 
-# Try detecting from invocation line (e.g., irm https://raw.githubusercontent.com/User/Repo/main/IWR.ps1 | iex)
+# Try detecting from invocation line or command history (in case of forks)
 $invLine = $MyInvocation.Line
-if ($invLine -match 'githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)') {
+if (-not $invLine -and (Get-Command Get-History -ErrorAction SilentlyContinue)) {
+    $lastHist = (Get-History -Count 1 -ErrorAction SilentlyContinue).CommandLine
+    if ($lastHist -match 'github') { $invLine = $lastHist }
+}
+
+if ($invLine -match 'githubusercontent\.com/([^/]+)/([^/]+)/([^/\?]+)') {
     $detectedUser = $matches[1]
     $detectedRepo = $matches[2]
     $detectedBranch = $matches[3]
-} elseif ($invLine -match 'github\.com/([^/]+)/([^/]+)') {
+} elseif ($invLine -match 'github\.com/([^/]+)/([^/\?]+)') {
     $detectedUser = $matches[1]
     $detectedRepo = $matches[2]
-}
-
-# Fallback: Environment variables or default
-if (-not $detectedUser -and $env:WINSUX_REPO) {
-    if ($env:WINSUX_REPO -match '([^/]+)/([^/]+)') {
-        $detectedUser = $matches[1]
-        $detectedRepo = $matches[2]
-    }
+} elseif ($env:WINSUX_REPO -match '([^/]+)/([^/]+)') {
+    $detectedUser = $matches[1]
+    $detectedRepo = $matches[2]
 }
 
 # Check if running locally inside a cloned repository already
@@ -69,20 +70,6 @@ if ($localWorkspace -and (Test-Path (Join-Path $localWorkspace "WinSux\winsux.ps
         Start-Process "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$localWorkspace\Start.ps1`""
     }
     exit
-}
-
-# If remote invocation without user, prompt or use fallback
-if (-not $detectedUser -or -not $detectedRepo) {
-    Write-Host "Could not auto-detect repository from invocation line." -ForegroundColor Yellow
-    $repoInput = Read-Host "Enter GitHub repository (format: 'Username/Repo' or press Enter to cancel)"
-    if ($repoInput -match '([^/]+)/([^/]+)') {
-        $detectedUser = $matches[1]
-        $detectedRepo = $matches[2]
-    } else {
-        Write-Host "No repository specified. Exiting..." -ForegroundColor Red
-        Pause
-        exit
-    }
 }
 
 Write-Host "Target Repository: $detectedUser/$detectedRepo ($detectedBranch)" -ForegroundColor Cyan
