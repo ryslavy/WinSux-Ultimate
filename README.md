@@ -1,6 +1,26 @@
 # WinSux & Ultimate (Unified & Repo-Independent)
 
-[Čeština](#český-popis) | [English](#english-description)
+<p align="center">
+  <a href="https://github.com/ryslavy/WinSux-Ultimate/stargazers"><img src="https://img.shields.io/github/stars/ryslavy/WinSux-Ultimate?style=for-the-badge&logo=github&color=gold" alt="GitHub Stars"></a>
+  <a href="https://github.com/ryslavy/WinSux-Ultimate/network/members"><img src="https://img.shields.io/github/forks/ryslavy/WinSux-Ultimate?style=for-the-badge&logo=github&color=blue" alt="Forks"></a>
+  <a href="https://github.com/ryslavy/WinSux-Ultimate"><img src="https://img.shields.io/github/repo-size/ryslavy/WinSux-Ultimate?style=for-the-badge&color=8A2BE2" alt="Repo Size"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ryslavy/WinSux-Ultimate?style=for-the-badge&color=10B981" alt="License: MIT"></a>
+  <a href="https://github.com/ryslavy/WinSux-Ultimate/commits/main"><img src="https://img.shields.io/github/last-commit/ryslavy/WinSux-Ultimate?style=for-the-badge&color=06B6D4" alt="Last Commit"></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Platform: Windows">
+  <img src="https://img.shields.io/badge/Shell-PowerShell%205.1%2B%20%7C%207%2B-5391FE?style=flat-square&logo=powershell&logoColor=white" alt="Shell: PowerShell">
+  <img src="https://img.shields.io/badge/Package%20Manager-Winget%20Native-2ea44f?style=flat-square" alt="Winget Native">
+  <img src="https://img.shields.io/badge/Releases%203rd%20Party-0%20(Zero)-success?style=flat-square" alt="Zero 3rd party releases">
+  <a href="stats.html"><img src="https://img.shields.io/badge/Dashboard-Interactive%20Stats-orange?style=flat-square&logo=html5" alt="Interactive Dashboard"></a>
+</p>
+
+<p align="center">
+  <a href="stats.html"><strong>📊 [Open Interactive Architecture & Stats Dashboard (stats.html)]</strong></a>
+</p>
+
+[Čeština](#český-popis) | [English](#english-description) | [Project Statistics](#project-statistics--metriky-projektu)
 
 ---
 
@@ -135,15 +155,42 @@ git add .
 git commit -m "Your update message"
 git push origin main
 ```
-Your web installer is immediately ready to use on any PC:
 ```powershell
 irm https://raw.githubusercontent.com/ryslavy/WinSux-Ultimate/main/IWR.ps1 | iex
 ```
-   ```
+
+---
+
+## Project Statistics / Metriky Projektu
+
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=ryslavy&repo=WinSux-Ultimate&theme=radical&show_icons=true" alt="WinSux-Ultimate Repo Stats" />
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=ryslavy&repo=WinSux-Ultimate&layout=compact&theme=radical" alt="Top Languages" />
+</p>
+
+### Detailed Category Breakdown
+
+| Category | Directory | Files | PS1 Scripts | LOC (Lines of Code) | Scope & Focus |
+|:---|:---|:---:|:---:|:---:|:---|
+| **WinSux (Automated Pipeline)** | `WinSux/` | 6 | 3 | 2,850 | 1-click overhaul, DDU prep, reboot, registry, timer service |
+| **1 Check** | `1 Check/` | 6 | 6 | 308 | CPU-Z, GPU-Z, OCCT stress testing, FurMark benchmark |
+| **2 Refresh** | `2 Refresh/` | 7 | 7 | 385 | Windows clean reinstall, factory reset, local accounts, ISO fwlinks |
+| **3 Setup** | `3 Setup/` | 12 | 12 | 332 | BitLocker, Edge configuration, startup apps, background tasks |
+| **4 Installers** | `4 Installers/` | 2 | 2 | 5,464 | 27+ game launchers & desktop apps (Winget) + MSI Afterburner |
+| **5 Graphics** | `5 Graphics/` | 14 | 14 | 2,491 | DDU clean, Nvidia debloating, DirectX Jun2010, VC++ 2005-2022 |
+| **6 Windows** | `6 Windows/` | 36 | 36 | 5,332 | Debloat, telemetry removal, services, privacy, latency optimization |
+| **7 Hardware** | `7 Hardware/` | 8 | 8 | 400 | MarkC mouse movement, hidusbf overclock, Gamepadla Polling |
+| **8 Advanced** | `8 Advanced/` | 19 | 19 | 2,910 | Resizable BAR force, Windows Defender, CPU priorities, kernel tweaks |
+| **Core & Launchers** | `Core/` + Root | 9 | 3 | 6,000+ | `AppHelper.ps1`, `Start.cmd`, `Start.ps1`, `IWR.ps1`, `stats.html` |
+| **TOTAL** | **Entire Project** | **119** | **110** | **26,200+** | **100% Native Package Management & 0 Upstream Releases** |
+
+> [!TIP]
+> You can open the full interactive HTML dashboard directly by opening [`stats.html`](stats.html) in your browser.
 
 ---
 
 ### Credits & Attribution
 
 Original research, registry tweaks, and optimization profiles created by [FR33THY](https://www.youtube.com/fr33thy).
-Refactored, modernized, and unified with native package management and repository independence.
+Refactored, modernized, and unified with native package management and repository independence by [ryslavy](https://github.com/ryslavy).
+
