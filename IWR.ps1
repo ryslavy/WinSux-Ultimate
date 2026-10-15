@@ -8,7 +8,12 @@
 # 1. Ensure Running As Administrator
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")) {
     Write-Host "Requesting Administrator privileges..." -ForegroundColor Cyan
-    Start-Process PowerShell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"{0}`"" -f $PSCommandPath) -Verb RunAs
+    if ($PSCommandPath) {
+        Start-Process PowerShell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"{0}`"" -f $PSCommandPath) -Verb RunAs
+    } else {
+        $cmdToRun = if ($MyInvocation.Line) { $MyInvocation.Line } else { "irm https://raw.githubusercontent.com/ryslavy/WinSux-Ultimate/main/IWR.ps1 | iex" }
+        Start-Process PowerShell.exe -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -Command `"{0}`"" -f $cmdToRun) -Verb RunAs
+    }
     exit
 }
 
@@ -20,34 +25,6 @@ Write-Host "==========================================================" -Foregro
 Write-Host "           WinSux & Ultimate - Automated Setup            " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
-
-# 2. Check Internet Connectivity (HTTP, DNS and adapter checks, bypasses ISP ICMP blocks)
-$hasInternet = $false
-if ([System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()) {
-    $endpoints = @("http://www.msftconnecttest.com/connecttest.txt", "https://github.com", "https://www.google.com")
-    foreach ($url in $endpoints) {
-        try {
-            $req = [System.Net.HttpWebRequest]::Create($url)
-            $req.Timeout = 2500
-            $req.Method = "HEAD"
-            $resp = $req.GetResponse()
-            $resp.Close()
-            $hasInternet = $true
-            break
-        } catch {}
-    }
-    if (-not $hasInternet) {
-        try {
-            if ([System.Net.Dns]::GetHostAddresses("github.com").Count -gt 0) { $hasInternet = $true }
-        } catch {}
-    }
-}
-
-if (-not $hasInternet -and !(Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
-    Write-Host "Error: Internet connection is required to download files." -ForegroundColor Red
-    Pause
-    exit
-}
 
 # 3. Detect Source Repository and Branch Dynamically
 $detectedUser = ""
